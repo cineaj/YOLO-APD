@@ -6,6 +6,7 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint as checkpoint
 
 __all__ = (
     "Conv",
