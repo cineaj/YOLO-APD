@@ -29,7 +29,7 @@ from .block import (
     PSA,
     SPP,
     SPPELAN,
-    SimSPPFCSPC
+    SimSPPFCSPC,
     SPPF,
     SPPF_UniRepLK,
     AConv,
