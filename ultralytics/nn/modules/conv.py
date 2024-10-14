@@ -11,6 +11,7 @@ import torch.utils.checkpoint as checkpoint
 __all__ = (
     "Conv",
     "Conv2",
+    "SimConv",
     "LightConv",
     "DWConv",
     "DWConvTranspose2d",
@@ -477,6 +478,31 @@ class ConvTranspose(nn.Module):
         """Applies activation and convolution transpose operation to input."""
         return self.act(self.conv_transpose(x))
 
+class SimConv(nn.Module):
+    """Normal Conv with ReLU activation"""
+
+    def __init__(
+        self, in_channels, out_channels, kernel_size, stride, groups=1, bias=False
+    ):
+        super().__init__()
+        padding = kernel_size // 2
+        self.conv = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            bias=bias,
+        )
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.act = nn.LeakyReLU()
+
+    def forward(self, x):
+        return self.act(self.bn(self.conv(x)))
+
+    def forward_fuse(self, x):
+        return self.act(self.conv(x))
 
 class Focus(nn.Module):
     """Focus wh information into c-space."""
