@@ -18,6 +18,7 @@ __all__ = (
     "GhostConv",
     "ChannelAttention",
     "SpatialAttention",
+    "UniRepLKNetBlock",
     "CBAM",
     "Concat",
     "RepConv",
