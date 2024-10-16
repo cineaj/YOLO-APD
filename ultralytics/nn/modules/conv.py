@@ -19,6 +19,7 @@ __all__ = (
     "ConvTranspose",
     "Focus",
     "GhostConv",
+    "Attention",
     "ChannelAttention",
     "SpatialAttention",
     "UniRepLKNetBlock",
