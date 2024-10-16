@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
 
-from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad, UniRepLKNetBlock,SimConv
+from .conv import Conv, DWConv, ODConv2d, GhostConv, LightConv, RepConv, autopad, UniRepLKNetBlock,SimConv
 from .transformer import TransformerBlock
 
 __all__ = (
