@@ -511,63 +511,63 @@ class ODConv2d(nn.Module):
         self.in_planes = in_planes  # number of input channels
         self.out_planes = out_planes  # number of output channels
         self.kernel_size = kernel_size  # convolution kernel size
-        self.stride = stride  # 步长
-        self.padding = padding  # 填充
-        self.dilation = dilation  # 膨胀
-        self.groups = groups  # 分组卷积的组数
-        self.kernel_num = kernel_num  # 核数目，用于核注意力机制
+        self.stride = stride  # Step size
+        self.padding = padding  # fill
+        self.dilation = dilation  # expansion 
+        self.groups = groups  # Number of groups for grouped convolution 
+        self.kernel_num = kernel_num  # number of cores , used for the core attention mechanism
 
-        # 初始化注意力模块
+        # initialize the attention module
         self.attention = Attention(in_planes, out_planes, kernel_size, groups=groups,
                                    reduction=reduction, kernel_num=kernel_num)
-        # 初始化权重参数
+        # initialize weight  parameters
         self.weight = nn.Parameter(torch.randn(kernel_num, out_planes, in_planes//groups, kernel_size, kernel_size),
                                    requires_grad=True)
         self._initialize_weights()
 
-        # 根据卷积核尺寸和核数目选择不同的前向传播实现
+        # choose differnt forward proopaagation imprlementation based on teh convolution kernel size and number of kernels
         if self.kernel_size == 1 and self.kernel_num == 1:
             self._forward_impl = self._forward_impl_pw1x
         else:
             self._forward_impl = self._forward_impl_common
 
     def _initialize_weights(self):
-        # 初始化权重
+        # initialize weights
         for i in range(self.kernel_num):
             nn.init.kaiming_normal_(self.weight[i], mode='fan_out', nonlinearity='relu')
 
     def update_temperature(self, temperature):
-        # 更新注意力机制的温度参数，用于调整注意力的强度
+        # Update the temprature parameter of the attention mechanism to adust the intensity of attention 
         self.attention.update_temperature(temperature)
 
     def _forward_impl_common(self, x):
-        # 通用的前向传播实现，适用于多种注意力机制
+        # General forward propagation implementation, suitable for various attention mechanism
         channel_attention, filter_attention, spatial_attention, kernel_attention = self.attention(x)
         batch_size, in_planes, height, width = x.size()
-        x = x * channel_attention  # 应用通道注意力
+        x = x * channel_attention  # Apply channel attention 
         x = x.reshape(1, -1, height, width)
-        # 合并多个注意力权重
+        # Merge multiple attention weights
         aggregate_weight = spatial_attention * kernel_attention * self.weight.unsqueeze(dim=0)
         aggregate_weight = torch.sum(aggregate_weight, dim=1).view(
             [-1, self.in_planes // self.groups, self.kernel_size, self.kernel_size])
-        # 执行卷积操作
+        # perform convolution operation 
         output = F.conv2d(x, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding,
                           dilation=self.dilation, groups=self.groups * batch_size)
         output = output.view(batch_size, self.out_planes, output.size(-2), output.size(-1))
-        output = output * filter_attention  # 应用滤波器注意力
+        output = output * filter_attention  # filter attention  
         return output
 
     def _forward_impl_pw1x(self, x):
-        # 点卷积1x1的特殊前向传播实现
+        # special forward propagation implementation of point convoution 1x1
         channel_attention, filter_attention, spatial_attention, kernel_attention = self.attention(x)
-        x = x * channel_attention  # 应用通道注意力
+        x = x * channel_attention  # Apply channel attention 
         output = F.conv2d(x, weight=self.weight.squeeze(dim=0), bias=None, stride=self.stride, padding=self.padding,
                           dilation=self.dilation, groups=self.groups)
-        output = output * filter_attention  # 应用滤波器注意力
+        output = output * filter_attention  # apply filter attention 
         return output
 
     def forward(self, x):
-        # 根据初始化时选择的实现进行前向传播
+        # Perfom forward propgation according to the implementation selected during initialization 
         return self._forward_impl(x)
 
 class LightConv(nn.Module):
